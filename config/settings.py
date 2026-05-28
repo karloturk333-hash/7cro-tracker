@@ -40,6 +40,7 @@ COLORS = {
     "sma": "#2962ff",       # plava
     "ema": "#ff6d00",       # narančasta
     "crosshair": "#758696",
+    "border": "#363a45",
 }
 
 # --- Default postavke indikatora ---

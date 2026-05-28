@@ -2,7 +2,7 @@
 Chart layer — gradi konfiguraciju za streamlit-lightweight-charts.
 
 Sve sto ima veze s izgledom grafa (candlestick, volume, indikatori,
-dark tema, crosshair) izolirano je ovdje. Ako mijenjamo charting
+dark tema, crosshair) izolirano je ovdje. Ako ikad mijenjamo charting
 biblioteku, diramo samo ovaj fajl.
 """
 
@@ -14,6 +14,7 @@ from config.settings import COLORS
 
 
 def _to_time(series: pd.Series) -> pd.Series:
+    """Datetime -> 'YYYY-MM-DD' string koji lightweight-charts ocekuje."""
     return series.dt.strftime("%Y-%m-%d")
 
 
@@ -35,6 +36,7 @@ def _volume_data(df: pd.DataFrame) -> list[dict]:
 
 
 def _line_data(df: pd.DataFrame, col: str) -> list[dict]:
+    """Pretvori indikatorsku kolonu u line-series podatke (preskace NaN)."""
     out = df[["Date", col]].dropna().copy()
     out["time"] = _to_time(out["Date"])
     out = out.rename(columns={col: "value"})
@@ -42,7 +44,14 @@ def _line_data(df: pd.DataFrame, col: str) -> list[dict]:
 
 
 def hover_legend_data(df: pd.DataFrame) -> dict:
-    """Podaci za hover-legendu (zadnji candle): OHLC, volumen, %change, smjer."""
+    """
+    Podaci za hover-legendu (zadnji dostupni candle): OHLC, volumen,
+    postotna promjena i smjer (buy/sell). Spremno za legendu iznad grafa.
+
+    NB: streamlit-lightweight-charts (0.7.x) ne emitira crosshair-move
+    evente natrag u Python, pa "follow-the-cursor" tooltip nije pouzdan
+    kroz taj wrapper. Staticna legenda zadnjeg candlea radi i na deployu.
+    """
     if df.empty:
         return {}
     last = df.iloc[-1]
@@ -64,6 +73,7 @@ def hover_legend_data(df: pd.DataFrame) -> dict:
 
 
 def _base_chart_layout() -> dict:
+    """Zajednicka dark-theme konfiguracija za svaki pane."""
     return {
         "layout": {
             "background": {"type": "solid", "color": COLORS["background"]},
@@ -78,14 +88,15 @@ def _base_chart_layout() -> dict:
             "vertLine": {"color": COLORS["crosshair"], "width": 1, "style": 2},
             "horzLine": {"color": COLORS["crosshair"], "width": 1, "style": 2},
         },
-        "rightPriceScale": {"borderColor": COLORS.get("border", COLORS["grid"]), "borderVisible": True},
-        "timeScale": {"borderColor": COLORS.get("border", COLORS["grid"]), "borderVisible": True, "timeVisible": False, "rightOffset": 5},
+        "rightPriceScale": {"borderColor": COLORS["grid"]},
+        "timeScale": {"borderColor": COLORS["grid"], "timeVisible": False, "rightOffset": 5},
         "handleScroll": True,
         "handleScale": True,
     }
 
 
 def _candle_series(df: pd.DataFrame, indicators: dict) -> list[dict]:
+    """Glavni pane: candlestick + volume + SMA/EMA overlay linije."""
     series = [
         {
             "type": "Candlestick",
@@ -113,21 +124,24 @@ def _candle_series(df: pd.DataFrame, indicators: dict) -> list[dict]:
         prefix = col.split("_")[0]
         if prefix not in line_colors:
             continue
-        series.append({
-            "type": "Line",
-            "data": _line_data(df, col),
-            "options": {
-                "color": line_colors[prefix],
-                "lineWidth": 2,
-                "priceLineVisible": False,
-                "lastValueVisible": True,
-                "title": col,
-            },
-        })
+        series.append(
+            {
+                "type": "Line",
+                "data": _line_data(df, col),
+                "options": {
+                    "color": line_colors[prefix],
+                    "lineWidth": 2,
+                    "priceLineVisible": False,
+                    "lastValueVisible": True,
+                    "title": col,
+                },
+            }
+        )
     return series
 
 
 def _rsi_pane(df: pd.DataFrame, height: int):
+    """RSI pane (zaseban, ispod glavnog)."""
     rsi_col = next((c for c in df.columns if c.startswith("RSI_")), None)
     if rsi_col is None:
         return None
@@ -135,24 +149,29 @@ def _rsi_pane(df: pd.DataFrame, height: int):
     layout["height"] = height
     return {
         "chart": layout,
-        "series": [{
-            "type": "Line",
-            "data": _line_data(df, rsi_col),
-            "options": {"color": "#b388ff", "lineWidth": 2, "priceLineVisible": False, "title": rsi_col},
-        }],
+        "series": [
+            {
+                "type": "Line",
+                "data": _line_data(df, rsi_col),
+                "options": {"color": "#b388ff", "lineWidth": 2, "priceLineVisible": False, "title": rsi_col},
+            }
+        ],
     }
 
 
 def _macd_pane(df: pd.DataFrame, height: int):
+    """MACD pane: histogram + MACD linija + signalna linija."""
     if "MACD" not in df.columns:
         return None
     layout = _base_chart_layout()
     layout["height"] = height
 
-    def _hist(col):
+    def _hist(col: str) -> list[dict]:
         out = df[["Date", col]].dropna().copy()
         out["time"] = _to_time(out["Date"])
-        out["color"] = out[col].apply(lambda v: COLORS["volume_up"] if v >= 0 else COLORS["volume_down"])
+        out["color"] = out[col].apply(
+            lambda v: COLORS["volume_up"] if v >= 0 else COLORS["volume_down"]
+        )
         out = out.rename(columns={col: "value"})
         return out[["time", "value", "color"]].to_dict("records")
 
@@ -160,14 +179,22 @@ def _macd_pane(df: pd.DataFrame, height: int):
         "chart": layout,
         "series": [
             {"type": "Histogram", "data": _hist("MACD_hist"), "options": {"title": "MACD hist"}},
-            {"type": "Line", "data": _line_data(df, "MACD"), "options": {"color": COLORS["sma"], "lineWidth": 2, "title": "MACD"}},
-            {"type": "Line", "data": _line_data(df, "MACD_signal"), "options": {"color": COLORS["ema"], "lineWidth": 2, "title": "Signal"}},
+            {"type": "Line", "data": _line_data(df, "MACD"),
+             "options": {"color": COLORS["sma"], "lineWidth": 2, "title": "MACD"}},
+            {"type": "Line", "data": _line_data(df, "MACD_signal"),
+             "options": {"color": COLORS["ema"], "lineWidth": 2, "title": "Signal"}},
         ],
     }
 
 
 def build_chart_config(df, indicators=None, main_height=480, sub_height=160):
-    """SMA/EMA overlay na glavni pane; RSI i MACD zasebni paneli ispod."""
+    """
+    Sastavi konfiguraciju za renderLightweightCharts().
+
+    SMA/EMA idu kao overlay na glavni pane; RSI i MACD dobivaju zasebne
+    panele ispod. main_height/sub_height kontroliraju visine (fullscreen).
+    Vraca listu chart objekata — svaki je zaseban pane.
+    """
     indicators = indicators or {}
     main_layout = _base_chart_layout()
     main_layout["height"] = main_height

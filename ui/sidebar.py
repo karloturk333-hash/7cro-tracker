@@ -52,6 +52,20 @@ def render_sidebar() -> dict:
         "EMA period", min_value=2, max_value=200, value=DEFAULT_EMA_PERIOD, step=1
     )
 
+    # Oscilatori u zasebnim panelima (v2)
+    show_rsi = st.sidebar.checkbox("RSI (zaseban panel)", value=True)
+    show_macd = st.sidebar.checkbox("MACD (zaseban panel)", value=True)
+
+    st.sidebar.divider()
+
+    # --- Prikaz ---
+    st.sidebar.subheader("Prikaz")
+    fullscreen = st.sidebar.toggle(
+        "🖥️ Fullscreen graf",
+        value=False,
+        help="Sakrij statistike i proširi graf preko cijelog ekrana",
+    )
+
     return {
         "uploaded": uploaded,
         "try_yfinance": try_yf,
@@ -60,4 +74,6 @@ def render_sidebar() -> dict:
         "sma_period": int(sma_period),
         "show_ema": show_ema,
         "ema_period": int(ema_period),
+        "show_rsi": show_rsi,
+        "show_macd": show_macd,
     }
