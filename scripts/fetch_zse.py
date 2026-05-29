@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import io
 import sys
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -23,7 +23,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from config.settings import ETF_ISIN, SAMPLE_CSV  # noqa: E402
-from data.zse_api import build_url  # noqa: E402
+from data.zse_api import MARKET_CLOSE_HOUR, build_url  # noqa: E402
 
 LOOKBACK_DAYS = 40  # koliko unatrag povlacimo (pokriva praznike/vikende)
 
@@ -46,11 +46,25 @@ def fetch_recent_raw() -> pd.DataFrame:
     return _read_raw_zse(io.BytesIO(resp.content))
 
 
+def drop_unfinished_today_raw(df: pd.DataFrame, now=None) -> pd.DataFrame:
+    """
+    Izbaci danasnji (nezavrseni) sirovi redak ako je prije zatvaranja burze.
+    Radi nad sirovom 'date' kolonom (string YYYY-MM-DD).
+    """
+    if df is None or df.empty or "date" not in df.columns:
+        return df
+    if now is None:
+        now = datetime.now()
+    if now.hour < MARKET_CLOSE_HOUR:
+        today_str = now.date().isoformat()
+        df = df[df["date"] != today_str]
+    return df.reset_index(drop=True)
+
+
 def merge_raw(existing: pd.DataFrame, recent: pd.DataFrame) -> pd.DataFrame:
     """
     Spoji sirove retke po (date, trading_model_id) — zadrzi novije.
-    Cuva sve postojece kolone i format. Sortira silazno (kao ZSE export:
-    najnoviji na vrhu).
+    Cuva sve postojece kolone i format. Sortira silazno (najnoviji na vrhu).
     """
     if recent is None or recent.empty:
         return existing
@@ -71,6 +85,9 @@ def main() -> int:
     except Exception as exc:  # mreza/API greska -> ne diramo postojece
         print(f"[fetch_zse] API greska: {exc}. Postojeci podaci ostaju netaknuti.")
         return 0
+
+    # Izbaci danasnji nezavrseni candle ako burza jos nije zatvorena
+    recent = drop_unfinished_today_raw(recent)
 
     merged = merge_raw(existing, recent)
     added = len(merged) - before

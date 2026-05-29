@@ -81,3 +81,34 @@ def merge_with_existing(old: pd.DataFrame, new: pd.DataFrame) -> pd.DataFrame:
         .reset_index(drop=True)
     )
     return combined[OHLCV_COLUMNS]
+
+
+# Sat (CET) nakon kojeg smatramo danasnji trgovinski dan zavrsenim.
+MARKET_CLOSE_HOUR = 18
+
+
+def drop_unfinished_today(df: pd.DataFrame, now=None) -> pd.DataFrame:
+    """
+    Izbaci danasnji (jos nezavrseni) candle ako je trenutni sat prije
+    zatvaranja burze (MARKET_CLOSE_HOUR, CET).
+
+    Sprjecava da intraday/djelomicni dan udje u graf kao laznazadnja
+    cijena. Jucerasnji i stariji dani se nikad ne diraju.
+
+    `now` se moze predati (za testove); inace se uzima lokalno vrijeme.
+    """
+    from datetime import datetime
+
+    if df is None or df.empty:
+        return df
+    if now is None:
+        now = datetime.now()
+
+    today = pd.Timestamp(now.date())
+    out = df.copy()
+    out["Date"] = pd.to_datetime(out["Date"])
+
+    if now.hour < MARKET_CLOSE_HOUR:
+        out = out[out["Date"] != today]
+
+    return out.reset_index(drop=True)

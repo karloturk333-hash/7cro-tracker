@@ -99,3 +99,51 @@ def test_merge_empty_new_keeps_old():
     new = pd.DataFrame(columns=["Date", "Open", "High", "Low", "Close", "Volume"])
     merged = merge_with_existing(old, new)
     assert len(merged) == 1
+
+
+# --- Testovi za odbacivanje nezavrsenog danasnjeg candlea ---
+
+def test_drop_unfinished_today_before_close():
+    """Prije 18h CET: danasnji (nezavrseni) dan se izbacuje."""
+    from datetime import datetime
+    from data.zse_api import drop_unfinished_today
+
+    df = pd.DataFrame({
+        "Date": pd.to_datetime(["2026-05-28", "2026-05-29"]),
+        "Open": [37.8, 37.9], "High": [37.8, 38.0], "Low": [37.6, 37.7],
+        "Close": [37.8, 37.95], "Volume": [24.0, 50.0],
+    })
+    now = datetime(2026, 5, 29, 14, 0)  # 14h, burza jos otvorena
+    out = drop_unfinished_today(df, now=now)
+    assert pd.Timestamp("2026-05-29") not in out["Date"].values
+    assert pd.Timestamp("2026-05-28") in out["Date"].values
+
+
+def test_keep_today_after_close():
+    """Poslije 18h CET: danasnji dan je zavrsen, ostaje."""
+    from datetime import datetime
+    from data.zse_api import drop_unfinished_today
+
+    df = pd.DataFrame({
+        "Date": pd.to_datetime(["2026-05-29"]),
+        "Open": [37.9], "High": [38.0], "Low": [37.7],
+        "Close": [37.95], "Volume": [50.0],
+    })
+    now = datetime(2026, 5, 29, 18, 30)  # poslije zatvaranja
+    out = drop_unfinished_today(df, now=now)
+    assert pd.Timestamp("2026-05-29") in out["Date"].values
+
+
+def test_past_days_always_kept():
+    """Jucerasnji i stariji dani se NIKAD ne diraju, bez obzira na sat."""
+    from datetime import datetime
+    from data.zse_api import drop_unfinished_today
+
+    df = pd.DataFrame({
+        "Date": pd.to_datetime(["2026-05-27", "2026-05-28"]),
+        "Open": [37.7, 37.8], "High": [37.7, 37.8], "Low": [37.5, 37.6],
+        "Close": [37.5, 37.8], "Volume": [201.0, 24.0],
+    })
+    now = datetime(2026, 5, 29, 10, 0)
+    out = drop_unfinished_today(df, now=now)
+    assert len(out) == 2
