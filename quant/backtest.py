@@ -74,3 +74,19 @@ def run_backtest(df: pd.DataFrame, fast: int = 20, slow: int = 50) -> dict:
         "max_drawdown": float(max_drawdown),
         "win": bool(strategy_return > buyhold_return),
     }
+
+
+def equity_curves(df: pd.DataFrame, fast: int = 20, slow: int = 50) -> pd.DataFrame:
+    """
+    Vrati DataFrame s equity krivuljama za vizualizaciju:
+        Date, strategy, buyhold  (obje normalizirane na 100 na pocetku)
+    """
+    data = generate_signals(df, fast, slow)
+    data["daily_ret"] = data["Close"].pct_change().fillna(0)
+    data["strat_ret"] = data["daily_ret"] * data["position"]
+    out = pd.DataFrame({
+        "Date": data["Date"],
+        "strategy": (1 + data["strat_ret"]).cumprod() * 100,
+        "buyhold": (1 + data["daily_ret"]).cumprod() * 100,
+    })
+    return out
