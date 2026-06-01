@@ -5,8 +5,8 @@ name: Update 7CRO data
 
 on:
   schedule:
-    # 17:00 UTC = 18:00 CET (radnim danom, nakon zatvaranja burze)
-    - cron: "0 17 * * 1-5"
+    # 18:00 UTC = 19:00 CET (radnim danom, nakon zatvaranja burze)
+    - cron: "0 18 * * 1-5"
   workflow_dispatch:   # omogucava rucno pokretanje iz GitHub UI-ja
 
 permissions:
