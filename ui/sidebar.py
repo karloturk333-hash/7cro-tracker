@@ -28,6 +28,7 @@ def render_sidebar() -> dict:
         type=["csv"],
     )
     try_yf = st.sidebar.checkbox("Pokušaj yfinance (eksperimentalno)", value=False)
+    refresh = st.sidebar.button("🔄 Osvježi podatke", use_container_width=True)
 
     st.sidebar.divider()
 
@@ -69,6 +70,7 @@ def render_sidebar() -> dict:
     return {
         "uploaded": uploaded,
         "try_yfinance": try_yf,
+        "refresh": refresh,
         "period": period,
         "show_sma": show_sma,
         "sma_period": int(sma_period),

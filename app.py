@@ -30,7 +30,7 @@ st.set_page_config(
 )
 
 
-@st.cache_data(show_spinner="Ucitavam podatke...")
+@st.cache_data(show_spinner="Ucitavam podatke...", ttl=3600)
 def _load(_uploaded, try_yf: bool):
     return get_data(uploaded_file=_uploaded, try_yfinance=try_yf)
 
@@ -112,6 +112,10 @@ def main() -> None:
         _fullscreen_css()
 
     opts = render_sidebar()
+
+    if opts.get("refresh"):
+        _load.clear()
+        st.rerun()
 
     df, source = _load(opts["uploaded"], opts["try_yfinance"])
     df = _filter_period(df, opts["period"])
