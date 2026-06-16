@@ -37,9 +37,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           if [ -n "$(git status --porcelain data/sample/7cro_zse.csv)" ]; then
+            LATEST=$(tail -n +2 data/sample/7cro_zse.csv | cut -d';' -f4 | sort -r | head -1)
             git add data/sample/7cro_zse.csv
-            git commit -m "chore: auto-update 7CRO data ($(date +%Y-%m-%d))"
+            git commit -m "chore: auto-update 7CRO data ($(date +%Y-%m-%d), latest $LATEST)"
             git push
+            echo "Pushano. Zadnji datum u CSV-u: $LATEST"
           else
             echo "Nema promjena u podacima."
           fi
