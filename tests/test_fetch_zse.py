@@ -6,14 +6,61 @@ na pravu API gresku (da workflow padne umjesto da tiho zastari).
 Mreza se ne dira (mock / monkeypatch).
 """
 
+import io
+
 import pandas as pd
-import pytest
 
 import scripts.fetch_zse as f
 
 
 def _raw(rows):
     return pd.DataFrame(rows, dtype=str)
+
+
+API_HEADER = (
+    'mic,"symbol","isin","date","trading_model_id","open_price","high_price",'
+    '"low_price","last_price","vwap_price","change_prev_close_percentage",'
+    '"num_trades","volume","turnover","price_currency","turnover_currency"\n'
+)
+
+
+def test_reads_comma_separated_dot_decimal_api_format():
+    """ZSE REST API vraca CSV sa ZAREZOM i TOCKOM-decimalom; mora se ispravno
+    parsirati (povijesni bug: parsiralo se kao `;` pa je cijeli redak postao
+    jedan string)."""
+    api = (
+        API_HEADER
+        + 'XZAG,"7CRO","HRICAMFCR102","2026-06-12","CT",38.10,38.20,38.05,38.15,'
+        '38.12,0.66,5,300.00000,11445.00,"EUR","EUR"\n'
+    ).encode("utf-8")
+    df = f.canonicalize(f._read_raw_zse(io.BytesIO(api)), from_api=True)
+    assert list(df.columns) == f.CANONICAL_COLS
+    assert df.iloc[0]["date"] == "2026-06-12"
+    # tocka -> zarez konverzija decimala
+    assert df.iloc[0]["last_price"] == "38,15"
+    assert df.iloc[0]["volume"] == "300,00000"
+
+
+def test_canonicalize_drops_phantom_column_and_junk_rows():
+    """Postojeci repo CSV ima 'phantom' 17. kolonu i prazan junk redak
+    (artefakt starog buga) — canonicalize ih mora ocistiti."""
+    existing = f.canonicalize(f._read_raw_zse(f.SAMPLE_CSV), from_api=False)
+    assert list(existing.columns) == f.CANONICAL_COLS
+    assert (existing["date"].fillna("").str.strip() == "").sum() == 0
+
+
+def test_api_data_merges_as_new_rows_end_to_end():
+    existing = f.canonicalize(f._read_raw_zse(f.SAMPLE_CSV), from_api=False)
+    before = len(existing)
+    api = (
+        API_HEADER
+        + 'XZAG,"7CRO","HRICAMFCR102","2026-06-12","CT",38.10,38.20,38.05,38.15,'
+        '38.12,0.66,5,300.00000,11445.00,"EUR","EUR"\n'
+    ).encode("utf-8")
+    recent = f.canonicalize(f._read_raw_zse(io.BytesIO(api)), from_api=True)
+    merged = f.merge_raw(existing, recent)
+    assert len(merged) == before + 1
+    assert f._max_date(merged) == "2026-06-12"
 
 
 def test_merge_adds_new_date():
