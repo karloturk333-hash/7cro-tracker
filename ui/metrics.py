@@ -7,6 +7,8 @@ male prigusene labele, krupne podebljane vrijednosti (TradingView-like).
 
 from __future__ import annotations
 
+import math
+
 import streamlit as st
 
 from config.settings import COLORS
@@ -113,3 +115,33 @@ def render_chart_legend(legend: dict) -> None:
     </div>
     """
     st.markdown(html, unsafe_allow_html=True)
+
+
+def render_market_intelligence(benchmark: dict, liquidity: dict) -> None:
+    """Kartice relativnog prinosa i ZSE likvidnosti."""
+    st.subheader("ZSE market intelligence")
+
+    if benchmark:
+        correlation = benchmark["correlation"]
+        corr_text = f"{correlation:.2f}" if math.isfinite(correlation) else "n/a"
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("7CRO prinos", f"{benchmark['asset_return_pct']:+.2f}%")
+        c2.metric("CROBEX10tr prinos", f"{benchmark['benchmark_return_pct']:+.2f}%")
+        c3.metric(
+            "Tracking razlika",
+            f"{benchmark['tracking_difference_pct']:+.2f} p.p.",
+            help="7CRO prinos minus prinos sluzbenog CROBEX10tr benchmarka.",
+        )
+        c4.metric("Dnevna korelacija", corr_text, help=f"{benchmark['sessions']} zajednickih sesija")
+
+    if liquidity:
+        l1, l2, l3, l4 = st.columns(4)
+        premium = liquidity["close_vs_vwap_pct"]
+        l1.metric(
+            "Zadnji VWAP",
+            f"{liquidity['last_vwap']:.2f} €",
+            delta=f"{premium:+.2f}% close vs VWAP" if premium is not None else None,
+        )
+        l2.metric("Promet · 30D prosjek", f"{liquidity['avg_turnover_30']:,.0f} €")
+        l3.metric("Transakcije · 30D prosjek", f"{liquidity['avg_trades_30']:.1f}")
+        l4.metric("Prosj. vrijednost transakcije", f"{liquidity['avg_trade_value_30']:,.0f} €")

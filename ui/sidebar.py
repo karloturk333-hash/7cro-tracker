@@ -56,6 +56,11 @@ def render_sidebar() -> dict:
     # Oscilatori u zasebnim panelima (v2)
     show_rsi = st.sidebar.checkbox("RSI (zaseban panel)", value=True)
     show_macd = st.sidebar.checkbox("MACD (zaseban panel)", value=True)
+    show_benchmark = st.sidebar.checkbox(
+        "Usporedi s CROBEX10tr",
+        value=True,
+        help="Normalizirani prinos 7CRO i sluzbenog total-return benchmarka.",
+    )
 
     st.sidebar.divider()
 
@@ -78,4 +83,5 @@ def render_sidebar() -> dict:
         "ema_period": int(ema_period),
         "show_rsi": show_rsi,
         "show_macd": show_macd,
+        "show_benchmark": show_benchmark,
     }

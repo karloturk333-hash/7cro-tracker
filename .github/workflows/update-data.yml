@@ -12,36 +12,46 @@ on:
 permissions:
   contents: write       # da workflow smije commitati
 
+concurrency:
+  group: update-zse-data
+  cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: pip
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pandas requests
+          pip install "pandas>=2,<3" "requests>=2.31"
 
-      - name: Fetch latest ZSE data
-        run: python scripts/fetch_zse.py
+      - name: Fetch latest 7CRO and CROBEX10tr data
+        run: |
+          python scripts/fetch_zse.py
+          python scripts/fetch_zse_index.py
+
+      - name: Validate market data
+        run: python scripts/validate_market_data.py
 
       - name: Commit if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if [ -n "$(git status --porcelain data/sample/7cro_zse.csv)" ]; then
-            LATEST=$(tail -n +2 data/sample/7cro_zse.csv | cut -d';' -f4 | sort -r | head -1)
-            git add data/sample/7cro_zse.csv
-            git commit -m "chore: auto-update 7CRO data ($(date +%Y-%m-%d), latest $LATEST)"
+          if [ -n "$(git status --porcelain data/sample/)" ]; then
+            LATEST=$(awk -F';' 'NR == 2 { print $4; exit }' data/sample/7cro_zse.csv)
+            git add data/sample/7cro_zse.csv data/sample/crobex10tr_zse.csv
+            git commit -m "chore: auto-update ZSE data ($(date +%Y-%m-%d), latest $LATEST)"
             git push
-            echo "Pushano. Zadnji datum u CSV-u: $LATEST"
+            echo "Pushano. Zadnji datum 7CRO CSV-a: $LATEST"
           else
             echo "Nema promjena u podacima."
           fi

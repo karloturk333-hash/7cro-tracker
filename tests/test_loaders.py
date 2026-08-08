@@ -5,7 +5,7 @@ Testovi za data layer — najvažniji dio (rukovanje pravim ZSE formatom).
 import pandas as pd
 
 from config.settings import HRK_TO_EUR, OHLCV_COLUMNS
-from data.loaders import _read_zse_csv, normalize_df
+from data.loaders import _read_zse_csv, _read_zse_index_csv, _read_zse_market_csv, normalize_df
 
 
 def test_zse_columns_standardized(raw_zse_csv):
@@ -67,3 +67,31 @@ def test_normalize_handles_missing_volume():
     )
     out = normalize_df(df)
     assert out["Volume"].iloc[0] == 0
+
+
+def test_market_loader_keeps_vwap_turnover_and_trades(raw_zse_csv):
+    market = _read_zse_market_csv(raw_zse_csv)
+    eur = market[market["Date"] == pd.Timestamp("2026-05-28")].iloc[0]
+    assert eur["VWAP"] == 37.77
+    assert eur["Turnover"] == 4344.60
+    assert eur["NumTrades"] == 4
+
+
+def test_market_loader_converts_hrk_turnover(raw_zse_csv):
+    market = _read_zse_market_csv(raw_zse_csv)
+    hrk = market[market["Date"] == pd.Timestamp("2020-11-17")].iloc[0]
+    assert abs(hrk["Turnover"] - 3384521.40 / HRK_TO_EUR) < 0.01
+
+
+def test_index_loader_accepts_api_csv():
+    import io
+
+    raw = (
+        '"mic","symbol","isin","date","open_value","high_value","low_value",'
+        '"last_value","change_prev_close_percentage","turnover"\n'
+        '"XZAG","C10TR","HRZB00ICB103","2026-08-07",3397.96,3403.57,'
+        '3383.74,3390.97,-0.13,3694307.10\n'
+    ).encode()
+    benchmark = _read_zse_index_csv(io.BytesIO(raw))
+    assert list(benchmark.columns) == OHLCV_COLUMNS
+    assert benchmark.iloc[0]["Close"] == 3390.97
