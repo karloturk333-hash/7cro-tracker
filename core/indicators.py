@@ -52,3 +52,63 @@ def add_macd(
     df["MACD_signal"] = df["MACD"].ewm(span=signal, adjust=False).mean()
     df["MACD_hist"] = df["MACD"] - df["MACD_signal"]
     return df
+
+
+def add_bollinger_bands(
+    df: pd.DataFrame,
+    period: int = 20,
+    std_dev: float = 2.0,
+    col: str = "Close",
+) -> pd.DataFrame:
+    """Bollinger Bands: pomicni prosjek plus/minus `std_dev` standardnih devijacija."""
+    df = df.copy()
+    middle = df[col].rolling(window=period, min_periods=period).mean()
+    deviation = df[col].rolling(window=period, min_periods=period).std(ddof=0)
+    df[f"BB_middle_{period}"] = middle
+    df[f"BB_upper_{period}"] = middle + std_dev * deviation
+    df[f"BB_lower_{period}"] = middle - std_dev * deviation
+    return df
+
+
+def add_atr(df: pd.DataFrame, period: int = 14) -> pd.DataFrame:
+    """Average True Range kao mjera apsolutne volatilnosti."""
+    df = df.copy()
+    previous_close = df["Close"].shift(1)
+    true_range = pd.concat(
+        [
+            df["High"] - df["Low"],
+            (df["High"] - previous_close).abs(),
+            (df["Low"] - previous_close).abs(),
+        ],
+        axis=1,
+    ).max(axis=1)
+    df[f"ATR_{period}"] = true_range.rolling(window=period, min_periods=period).mean()
+    return df
+
+
+def add_stochastic(
+    df: pd.DataFrame,
+    period: int = 14,
+    smooth: int = 3,
+) -> pd.DataFrame:
+    """Stochastic oscillator %K i njegov `smooth`-dnevni %D prosjek."""
+    df = df.copy()
+    lowest = df["Low"].rolling(window=period, min_periods=period).min()
+    highest = df["High"].rolling(window=period, min_periods=period).max()
+    price_range = highest - lowest
+    k = (df["Close"] - lowest) / price_range.where(price_range != 0) * 100
+    df[f"STOCH_K_{period}"] = k
+    df[f"STOCH_D_{period}_{smooth}"] = k.rolling(window=smooth, min_periods=smooth).mean()
+    return df
+
+
+def add_obv(df: pd.DataFrame, col: str = "Close") -> pd.DataFrame:
+    """On-Balance Volume: kumulativni volumen potpisan smjerom promjene cijene."""
+    df = df.copy()
+    direction = df[col].diff()
+    signed_volume = df["Volume"].where(direction > 0, -df["Volume"])
+    signed_volume = signed_volume.where(direction != 0, 0.0)
+    if not signed_volume.empty:
+        signed_volume.iloc[0] = 0.0
+    df["OBV"] = signed_volume.cumsum()
+    return df

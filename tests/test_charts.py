@@ -2,8 +2,13 @@
 Testovi za chart layer — hover legenda i struktura panela.
 """
 
-from core.indicators import add_macd, add_rsi
-from ui.charts import build_chart_config, build_comparison_chart_config, hover_legend_data
+from core.indicators import add_atr, add_bollinger_bands, add_macd, add_obv, add_rsi, add_stochastic
+from ui.charts import (
+    build_chart_config,
+    build_comparison_chart_config,
+    build_multi_comparison_chart_config,
+    hover_legend_data,
+)
 
 
 def test_legend_has_required_keys(ohlcv_df):
@@ -70,4 +75,37 @@ def test_comparison_chart_has_asset_and_benchmark_lines():
     assert [series["options"]["title"] for series in config[0]["series"]] == [
         "7CRO",
         "CROBEX10tr",
+    ]
+
+
+def test_bollinger_bands_render_on_main_pane(ohlcv_df):
+    df = add_bollinger_bands(ohlcv_df)
+    indicators = {name: True for name in ["BB_middle_20", "BB_upper_20", "BB_lower_20"]}
+    config = build_chart_config(df, indicators)
+    titles = [series["options"].get("title") for series in config[0]["series"]]
+    assert all(name in titles for name in indicators)
+
+
+def test_atr_stochastic_and_obv_add_three_panes(ohlcv_df):
+    df = add_obv(add_stochastic(add_atr(ohlcv_df)))
+    config = build_chart_config(df, {"ATR": True, "Stochastic": True, "OBV": True})
+    assert len(config) == 4
+
+
+def test_multi_comparison_chart_renders_every_instrument():
+    import pandas as pd
+
+    comparison = pd.DataFrame(
+        {
+            "Date": pd.to_datetime(["2026-08-06", "2026-08-07"]),
+            "7CRO": [100.0, 101.0],
+            "C10TR": [100.0, 100.5],
+            "HT": [100.0, 102.0],
+        }
+    )
+    config = build_multi_comparison_chart_config(comparison)
+    assert [series["options"]["title"] for series in config[0]["series"]] == [
+        "7CRO",
+        "C10TR",
+        "HT",
     ]

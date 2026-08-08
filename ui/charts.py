@@ -111,6 +111,21 @@ def _candle_series(df: pd.DataFrame, indicators: dict) -> list[dict]:
         if not enabled or col not in df.columns:
             continue
         prefix = col.split("_")[0]
+        if prefix == "BB":
+            is_middle = col.startswith("BB_middle")
+            series.append({
+                "type": "Line",
+                "data": _line_data(df, col),
+                "options": {
+                    "color": COLORS["bollinger"],
+                    "lineWidth": 1 if not is_middle else 2,
+                    "lineStyle": 2 if is_middle else 0,
+                    "priceLineVisible": False,
+                    "lastValueVisible": False,
+                    "title": col,
+                },
+            })
+            continue
         if prefix not in line_colors:
             continue
         series.append({
@@ -166,6 +181,61 @@ def _macd_pane(df: pd.DataFrame, height: int):
     }
 
 
+def _single_line_pane(df: pd.DataFrame, prefix: str, color: str, height: int):
+    col = next((name for name in df.columns if name.startswith(prefix)), None)
+    if col is None:
+        return None
+    layout = _base_chart_layout()
+    layout["height"] = height
+    return {
+        "chart": layout,
+        "series": [{
+            "type": "Line",
+            "data": _line_data(df, col),
+            "options": {
+                "color": color,
+                "lineWidth": 2,
+                "priceLineVisible": False,
+                "title": col,
+            },
+        }],
+    }
+
+
+def _stochastic_pane(df: pd.DataFrame, height: int):
+    k_col = next((name for name in df.columns if name.startswith("STOCH_K_")), None)
+    d_col = next((name for name in df.columns if name.startswith("STOCH_D_")), None)
+    if k_col is None or d_col is None:
+        return None
+    layout = _base_chart_layout()
+    layout["height"] = height
+    return {
+        "chart": layout,
+        "series": [
+            {
+                "type": "Line",
+                "data": _line_data(df, k_col),
+                "options": {
+                    "color": COLORS["stochastic_k"],
+                    "lineWidth": 2,
+                    "priceLineVisible": False,
+                    "title": "%K",
+                },
+            },
+            {
+                "type": "Line",
+                "data": _line_data(df, d_col),
+                "options": {
+                    "color": COLORS["stochastic_d"],
+                    "lineWidth": 2,
+                    "priceLineVisible": False,
+                    "title": "%D",
+                },
+            },
+        ],
+    }
+
+
 def build_chart_config(df, indicators=None, main_height=480, sub_height=160):
     """SMA/EMA overlay na glavni pane; RSI i MACD zasebni paneli ispod."""
     indicators = indicators or {}
@@ -178,6 +248,18 @@ def build_chart_config(df, indicators=None, main_height=480, sub_height=160):
             charts.append(pane)
     if indicators.get("MACD"):
         pane = _macd_pane(df, sub_height)
+        if pane:
+            charts.append(pane)
+    if indicators.get("ATR"):
+        pane = _single_line_pane(df, "ATR_", COLORS["atr"], sub_height)
+        if pane:
+            charts.append(pane)
+    if indicators.get("Stochastic"):
+        pane = _stochastic_pane(df, sub_height)
+        if pane:
+            charts.append(pane)
+    if indicators.get("OBV"):
+        pane = _single_line_pane(df, "OBV", COLORS["obv"], sub_height)
         if pane:
             charts.append(pane)
     return charts
@@ -213,3 +295,33 @@ def build_comparison_chart_config(comparison: pd.DataFrame, height: int = 260):
             },
         ],
     }]
+
+
+def build_multi_comparison_chart_config(comparison: pd.DataFrame, height: int = 340):
+    """Dinamicki line chart za vise normaliziranih ZSE instrumenata."""
+    palette = [
+        COLORS["sma"],
+        COLORS["benchmark"],
+        COLORS["ema"],
+        COLORS["up"],
+        COLORS["obv"],
+        COLORS["atr"],
+    ]
+    layout = _base_chart_layout()
+    layout["height"] = height
+    layout["rightPriceScale"]["scaleMargins"] = {"top": 0.12, "bottom": 0.12}
+    series = []
+    for index, col in enumerate(name for name in comparison.columns if name != "Date"):
+        series.append(
+            {
+                "type": "Line",
+                "data": _line_data(comparison, col),
+                "options": {
+                    "color": palette[index % len(palette)],
+                    "lineWidth": 2,
+                    "priceLineVisible": False,
+                    "title": col,
+                },
+            }
+        )
+    return [{"chart": layout, "series": series}]
