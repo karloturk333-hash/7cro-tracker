@@ -1,6 +1,7 @@
 from datetime import date
 
 import pandas as pd
+import pytest
 
 from core.market_intelligence import (
     benchmark_stats,
@@ -24,7 +25,7 @@ def test_comparison_rebases_both_series_to_100():
     assert comparison.iloc[0]["7CRO"] == 100
     assert comparison.iloc[0]["CROBEX10tr"] == 100
     assert comparison.iloc[-1]["7CRO"] == 120
-    assert comparison.iloc[-1]["CROBEX10tr"] == 110
+    assert comparison.iloc[-1]["CROBEX10tr"] == pytest.approx(110)
 
 
 def test_benchmark_stats_reports_tracking_difference():

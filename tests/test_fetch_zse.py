@@ -54,13 +54,13 @@ def test_api_data_merges_as_new_rows_end_to_end():
     before = len(existing)
     api = (
         API_HEADER
-        + 'XZAG,"7CRO","HRICAMFCR102","2026-06-12","CT",38.10,38.20,38.05,38.15,'
+        + 'XZAG,"7CRO","HRICAMFCR102","2099-06-12","CT",38.10,38.20,38.05,38.15,'
         '38.12,0.66,5,300.00000,11445.00,"EUR","EUR"\n'
     ).encode("utf-8")
     recent = f.canonicalize(f._read_raw_zse(io.BytesIO(api)), from_api=True)
     merged = f.merge_raw(existing, recent)
     assert len(merged) == before + 1
-    assert f._max_date(merged) == "2026-06-12"
+    assert f._max_date(merged) == "2099-06-12"
 
 
 def test_merge_adds_new_date():
