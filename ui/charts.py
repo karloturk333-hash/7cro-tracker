@@ -181,3 +181,35 @@ def build_chart_config(df, indicators=None, main_height=480, sub_height=160):
         if pane:
             charts.append(pane)
     return charts
+
+
+def build_comparison_chart_config(comparison: pd.DataFrame, height: int = 260):
+    """Normalizirani 7CRO i CROBEX10tr prinos, obje serije sa startom 100."""
+    layout = _base_chart_layout()
+    layout["height"] = height
+    layout["rightPriceScale"]["scaleMargins"] = {"top": 0.15, "bottom": 0.15}
+    return [{
+        "chart": layout,
+        "series": [
+            {
+                "type": "Line",
+                "data": _line_data(comparison, "7CRO"),
+                "options": {
+                    "color": COLORS["sma"],
+                    "lineWidth": 2,
+                    "priceLineVisible": False,
+                    "title": "7CRO",
+                },
+            },
+            {
+                "type": "Line",
+                "data": _line_data(comparison, "CROBEX10tr"),
+                "options": {
+                    "color": COLORS["benchmark"],
+                    "lineWidth": 2,
+                    "priceLineVisible": False,
+                    "title": "CROBEX10tr",
+                },
+            },
+        ],
+    }]

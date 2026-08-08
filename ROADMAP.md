@@ -5,6 +5,8 @@ Funkcionalan, deployan dashboard:
 - Candlestick + volume + SMA/EMA/RSI/MACD
 - HRK→EUR konverzija, hover legenda, fullscreen
 - Auto-pull sa ZSE REST API (GitHub Actions cron, radnim danom 18h)
+- 7CRO vs CROBEX10tr benchmark, tracking razlika i ZSE likvidnosne metrike
+- Provjera svježine podataka u aplikaciji i CI pipelineu
 - 37 testova (TDD), modularna arhitektura (data / core / ui razdvojeni)
 
 Ovo je verzija za prijavu — radi, deployana, pokazuje cijeli ciklus.
@@ -54,7 +56,7 @@ GET /api/health                           → status + zadnji datum podataka
   ravnalo (measure) — sve mišem preko lightweight-charts plugina
 - Crteži spremljeni u localStorage (preživljavaju refresh)
 - Pravi fullscreen, custom hover tooltip uz kursor
-- Usporedba više instrumenata (7CRO vs CROBEX) — overlay normaliziran na 100
+- Usporedba više instrumenata — proširenje postojećeg 7CRO vs CROBEX10tr prikaza
 
 ### Redoslijed izvedbe v4
 1. FastAPI skeleton + prebaci core/ i data/ → izloži /api/ohlcv (TDD)

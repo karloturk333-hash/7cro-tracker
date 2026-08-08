@@ -18,6 +18,7 @@ from pathlib import Path
 import pandas as pd
 
 from config.settings import (
+    BENCHMARK_CSV,
     HRK_TO_EUR,
     OHLCV_COLUMNS,
     SAMPLE_CSV,
@@ -33,6 +34,8 @@ _ZSE_RENAME = {
     "last_price": "Close",  # ZSE "last_price" = dnevni close
     "volume": "Volume",
 }
+
+MARKET_COLUMNS = ["Date", "VWAP", "Turnover", "NumTrades", "Volume"]
 
 
 def normalize_df(df: pd.DataFrame) -> pd.DataFrame:
@@ -109,9 +112,90 @@ def _read_zse_csv(source) -> pd.DataFrame:
     return normalize_df(df)
 
 
+def _read_zse_market_csv(source) -> pd.DataFrame:
+    """Ucitaj ZSE likvidnosna polja koja standardni OHLCV loader namjerno odbacuje."""
+    raw = pd.read_csv(source, sep=";", decimal=",", quotechar='"', dtype=str)
+    if "trading_model_id" in raw.columns:
+        raw = raw[raw["trading_model_id"] == "CT"].copy()
+
+    numeric = ["vwap_price", "turnover", "num_trades", "volume"]
+    for col in numeric:
+        if col in raw.columns:
+            raw[col] = pd.to_numeric(
+                raw[col].astype(str).str.replace(".", "", regex=False).str.replace(",", ".", regex=False),
+                errors="coerce",
+            )
+
+    if "price_currency" in raw.columns:
+        hrk_price = raw["price_currency"] == "HRK"
+        raw.loc[hrk_price, "vwap_price"] = raw.loc[hrk_price, "vwap_price"] / HRK_TO_EUR
+    if "turnover_currency" in raw.columns:
+        hrk_turnover = raw["turnover_currency"] == "HRK"
+        raw.loc[hrk_turnover, "turnover"] = raw.loc[hrk_turnover, "turnover"] / HRK_TO_EUR
+
+    out = raw.rename(
+        columns={
+            "date": "Date",
+            "vwap_price": "VWAP",
+            "turnover": "Turnover",
+            "num_trades": "NumTrades",
+            "volume": "Volume",
+        }
+    )
+    out["Date"] = pd.to_datetime(out["Date"], errors="coerce")
+    out = out.dropna(subset=["Date"]).sort_values("Date").drop_duplicates("Date", keep="last")
+    for col in MARKET_COLUMNS[1:]:
+        if col not in out:
+            out[col] = 0.0
+        out[col] = pd.to_numeric(out[col], errors="coerce").fillna(0.0)
+    return out[MARKET_COLUMNS].reset_index(drop=True)
+
+
+def _read_zse_index_csv(source) -> pd.DataFrame:
+    """Ucitaj ZSE index-history CSV u isti OHLCV ugovor kao vrijednosni papir."""
+    if hasattr(source, "read"):
+        content = source.read()
+    else:
+        content = Path(source).read_bytes()
+    text = content.decode("utf-8") if isinstance(content, bytes) else content
+    first_line = text.splitlines()[0] if text else ""
+    separator = ";" if ";" in first_line else ","
+    raw = pd.read_csv(io.StringIO(text), sep=separator, dtype=str, quotechar='"')
+
+    for col in ["open_value", "high_value", "low_value", "last_value", "turnover"]:
+        if col in raw.columns:
+            values = raw[col].astype(str)
+            if separator == ";":
+                values = values.str.replace(".", "", regex=False).str.replace(",", ".", regex=False)
+            raw[col] = pd.to_numeric(values, errors="coerce")
+
+    raw["Volume"] = 0.0
+    return normalize_df(
+        raw.rename(
+            columns={
+                "date": "Date",
+                "open_value": "Open",
+                "high_value": "High",
+                "low_value": "Low",
+                "last_value": "Close",
+            }
+        )
+    )
+
+
 def load_zse_sample() -> pd.DataFrame:
     """Učita ugrađeni ZSE sample CSV (uvijek dostupan)."""
     return _read_zse_csv(SAMPLE_CSV)
+
+
+def load_zse_market_sample() -> pd.DataFrame:
+    """Ucitaj VWAP, promet i broj transakcija za 7CRO."""
+    return _read_zse_market_csv(SAMPLE_CSV)
+
+
+def load_benchmark_sample() -> pd.DataFrame:
+    """Ucitaj spremljenu povijest sluzbenog CROBEX10tr benchmarka."""
+    return _read_zse_index_csv(BENCHMARK_CSV)
 
 
 def load_uploaded_csv(uploaded_file) -> pd.DataFrame:

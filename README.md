@@ -12,6 +12,10 @@ Zagrebačke burze (ZSE).
 - **Candlestick graf** s volumenom za cijeli životni vijek ETF-a (od 2020.)
 - **Tehnički indikatori**: SMA i EMA (s podesivim periodima)
 - **Statistike**: zadnja cijena, dnevna promjena, 52-tjedni max/min, prosječni volumen
+- **Benchmark analiza**: 7CRO vs službeni CROBEX10tr, normalizirani prinos,
+  tracking razlika i korelacija
+- **ZSE likvidnost**: VWAP, promet, broj i prosječna vrijednost transakcija
+- **Kontrola svježine**: upozorenje za zastarjele podatke i CI validacija oba dataseta
 - **Vremenski raspon**: od 1 mjeseca do cijele povijesti
 - **Robustan data layer**: CSV upload + yfinance fallback + ugrađeni ZSE podaci
 - **Točna valutna obrada**: HRK cijene (do 31.12.2022.) automatski konvertirane u
@@ -25,9 +29,10 @@ Zagrebačke burze (ZSE).
 ├── config/settings.py      # tickeri, boje, tečaj, konstante
 ├── data/
 │   ├── loaders.py          # CSV / yfinance / sample + normalizacija
-│   └── sample/7cro_zse.csv # ugrađeni ZSE podaci
+│   └── sample/             # 7CRO + CROBEX10tr ZSE podaci
 ├── core/
-│   ├── indicators.py       # SMA, EMA (+ RSI, MACD spremni za v2)
+│   ├── indicators.py       # SMA, EMA, RSI, MACD
+│   ├── market_intelligence.py # benchmark, likvidnost, svježina
 │   └── stats.py            # statistike
 └── ui/
     ├── charts.py           # lightweight-charts konfiguracija

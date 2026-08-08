@@ -13,10 +13,16 @@ import streamlit.components.v1 as components
 
 from config.settings import COLORS, ETF_ISIN, ETF_NAME, ETF_TICKER
 from core.indicators import add_ema, add_macd, add_rsi, add_sma
+from core.market_intelligence import (
+    benchmark_stats,
+    build_benchmark_comparison,
+    freshness_status,
+    liquidity_stats,
+)
 from core.stats import compute_stats
-from data.loaders import get_data
-from ui.charts import build_chart_config, hover_legend_data
-from ui.metrics import render_chart_legend, render_metrics
+from data.loaders import get_data, load_benchmark_sample, load_zse_market_sample
+from ui.charts import build_chart_config, build_comparison_chart_config, hover_legend_data
+from ui.metrics import render_chart_legend, render_market_intelligence, render_metrics
 from ui.sidebar import render_sidebar
 
 from streamlit_lightweight_charts import renderLightweightCharts
@@ -33,6 +39,11 @@ st.set_page_config(
 @st.cache_data(show_spinner="Ucitavam podatke...", ttl=3600)
 def _load(_uploaded, try_yf: bool):
     return get_data(uploaded_file=_uploaded, try_yfinance=try_yf)
+
+
+@st.cache_data(show_spinner=False, ttl=3600)
+def _load_market_intelligence():
+    return load_zse_market_sample(), load_benchmark_sample()
 
 
 def _filter_period(df: pd.DataFrame, period: str) -> pd.DataFrame:
@@ -119,6 +130,9 @@ def main() -> None:
 
     df, source = _load(opts["uploaded"], opts["try_yfinance"])
     df = _filter_period(df, opts["period"])
+    market_data, benchmark_data = _load_market_intelligence()
+    market_data = _filter_period(market_data, opts["period"])
+    benchmark_data = _filter_period(benchmark_data, opts["period"])
 
     indicators = {}
     if opts["show_sma"]:
@@ -135,6 +149,10 @@ def main() -> None:
         indicators["MACD"] = True
 
     stats = compute_stats(df)
+    comparison = build_benchmark_comparison(df, benchmark_data)
+    relative_stats = benchmark_stats(comparison)
+    liquidity = liquidity_stats(market_data, df)
+    freshness = freshness_status(stats.get("last_date"))
 
     if df.empty:
         st.error("Nema podataka za prikaz.")
@@ -145,6 +163,17 @@ def main() -> None:
     if not fs:
         st.title(f"📈 {ETF_TICKER} — {ETF_NAME}")
         st.caption(f"ISIN: {ETF_ISIN}  •  Izvor: {source}  •  Sve cijene u EUR")
+        stale_days = freshness["business_days_stale"]
+        if freshness["is_stale"]:
+            st.warning(
+                f"ZSE podaci mogu biti zastarjeli: zadnja sesija "
+                f"{stats['last_date'].strftime('%d.%m.%Y.')} ({stale_days} radnih dana bez novog podatka)."
+            )
+        else:
+            st.caption(
+                f"ZSE status: svjeze · zadnja sesija {stats['last_date'].strftime('%d.%m.%Y.')} "
+                f"· {len(df):,} prikazanih sesija"
+            )
         render_metrics(stats)
         st.divider()
 
@@ -167,6 +196,14 @@ def main() -> None:
     if fs:
         _request_browser_fullscreen()
     else:
+        if opts["show_benchmark"] and not comparison.empty:
+            st.subheader("7CRO vs CROBEX10tr")
+            st.caption("Ukupni prinos od pocetka odabranog razdoblja · obje serije normalizirane na 100")
+            renderLightweightCharts(
+                build_comparison_chart_config(comparison),
+                key=f"benchmark_chart_{opts['period']}",
+            )
+        render_market_intelligence(relative_stats, liquidity)
         st.caption(
             "HRK cijene (do 31.12.2022.) konvertirane u EUR po fiksnom tecaju 7,53450. "
             "Podaci: Zagreb Stock Exchange (ZSE). Projekt nije povezan s InterCapitalom."

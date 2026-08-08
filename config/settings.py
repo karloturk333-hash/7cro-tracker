@@ -9,12 +9,16 @@ from pathlib import Path
 # --- Putanje ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 SAMPLE_CSV = BASE_DIR / "data" / "sample" / "7cro_zse.csv"
+BENCHMARK_CSV = BASE_DIR / "data" / "sample" / "crobex10tr_zse.csv"
 
 # --- Instrument ---
 ETF_NAME = "InterCapital CROBEX10tr UCITS ETF"
 ETF_TICKER = "7CRO"
 ETF_ISIN = "HRICAMFCR102"
 YFINANCE_TICKER = "7CRO.ZA"  # ZSE pokrivenost slaba; samo fallback
+BENCHMARK_NAME = "CROBEX10tr"
+BENCHMARK_TICKER = "C10TR"
+BENCHMARK_ISIN = "HRZB00ICB103"
 
 # --- ZSE REST API ---
 # Javni endpoint: <BASE>/security-history/<MIC>/<ISIN>/<od>/<do>/<fmt>?language=EN
@@ -43,6 +47,7 @@ COLORS = {
     "volume_down": "rgba(239, 83, 80, 0.5)",
     "sma": "#2962ff",
     "ema": "#ff6d00",
+    "benchmark": "#b388ff",
     "crosshair": "#758696",
     "border": "#363a45",
 }

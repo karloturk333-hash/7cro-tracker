@@ -3,7 +3,7 @@ Testovi za chart layer — hover legenda i struktura panela.
 """
 
 from core.indicators import add_macd, add_rsi
-from ui.charts import build_chart_config, hover_legend_data
+from ui.charts import build_chart_config, build_comparison_chart_config, hover_legend_data
 
 
 def test_legend_has_required_keys(ohlcv_df):
@@ -54,3 +54,20 @@ def test_fullscreen_height_larger(ohlcv_df):
     normal = build_chart_config(ohlcv_df, {}, main_height=520)
     full = build_chart_config(ohlcv_df, {}, main_height=700)
     assert full[0]["chart"]["height"] > normal[0]["chart"]["height"]
+
+
+def test_comparison_chart_has_asset_and_benchmark_lines():
+    import pandas as pd
+
+    comparison = pd.DataFrame(
+        {
+            "Date": pd.to_datetime(["2026-08-06", "2026-08-07"]),
+            "7CRO": [100.0, 101.0],
+            "CROBEX10tr": [100.0, 100.5],
+        }
+    )
+    config = build_comparison_chart_config(comparison)
+    assert [series["options"]["title"] for series in config[0]["series"]] == [
+        "7CRO",
+        "CROBEX10tr",
+    ]
