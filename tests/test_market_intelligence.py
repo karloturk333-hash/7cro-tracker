@@ -6,8 +6,10 @@ import pytest
 from core.market_intelligence import (
     benchmark_stats,
     build_benchmark_comparison,
+    build_multi_comparison,
     freshness_status,
     liquidity_stats,
+    multi_comparison_stats,
 )
 
 
@@ -60,3 +62,25 @@ def test_freshness_warns_after_two_business_days():
     status = freshness_status(pd.Timestamp("2026-08-03"), as_of=date(2026, 8, 7))
     assert status["business_days_stale"] == 4
     assert status["is_stale"] is True
+
+
+def test_multi_comparison_normalizes_each_instrument():
+    comparison = build_multi_comparison(
+        {
+            "7CRO": _prices([10, 11, 12]),
+            "HT": _prices([40, 40, 44]),
+            "KOEI": _prices([500, 550, 600]),
+        }
+    )
+    assert comparison.iloc[0][["7CRO", "HT", "KOEI"]].tolist() == [100, 100, 100]
+    assert comparison.iloc[-1]["HT"] == pytest.approx(110)
+    assert comparison.iloc[-1]["KOEI"] == pytest.approx(120)
+
+
+def test_multi_stats_include_return_volatility_and_drawdown():
+    comparison = build_multi_comparison({"7CRO": _prices([10, 12, 9, 11])})
+    stats = multi_comparison_stats(comparison).iloc[0]
+    assert stats["Instrument"] == "7CRO"
+    assert stats["Prinos"] == pytest.approx(10)
+    assert stats["Volatilnost"] > 0
+    assert stats["Max drawdown"] == pytest.approx(-25)

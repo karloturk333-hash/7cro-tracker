@@ -1,4 +1,4 @@
-name: Update 7CRO data
+name: Update ZSE market data
 
 # Povlaci svjeze podatke sa ZSE i commita ih natrag u repo.
 # Streamlit Cloud se onda auto-redeploya.
@@ -34,10 +34,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install "pandas>=2,<3" "requests>=2.31"
 
-      - name: Fetch latest 7CRO and CROBEX10tr data
+      - name: Fetch latest ZSE market data
         run: |
           python scripts/fetch_zse.py
           python scripts/fetch_zse_index.py
+          python scripts/fetch_zse_instruments.py
 
       - name: Validate market data
         run: python scripts/validate_market_data.py
@@ -48,7 +49,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           if [ -n "$(git status --porcelain data/sample/)" ]; then
             LATEST=$(awk -F';' 'NR == 2 { print $4; exit }' data/sample/7cro_zse.csv)
-            git add data/sample/7cro_zse.csv data/sample/crobex10tr_zse.csv
+            git add data/sample/*.csv
             git commit -m "chore: auto-update ZSE data ($(date +%Y-%m-%d), latest $LATEST)"
             git push
             echo "Pushano. Zadnji datum 7CRO CSV-a: $LATEST"
