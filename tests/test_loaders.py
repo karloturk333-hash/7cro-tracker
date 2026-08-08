@@ -5,7 +5,13 @@ Testovi za data layer — najvažniji dio (rukovanje pravim ZSE formatom).
 import pandas as pd
 
 from config.settings import HRK_TO_EUR, OHLCV_COLUMNS
-from data.loaders import _read_zse_csv, _read_zse_index_csv, _read_zse_market_csv, normalize_df
+from data.loaders import (
+    _read_zse_csv,
+    _read_zse_index_csv,
+    _read_zse_market_csv,
+    load_comparison_samples,
+    normalize_df,
+)
 
 
 def test_zse_columns_standardized(raw_zse_csv):
@@ -95,3 +101,10 @@ def test_index_loader_accepts_api_csv():
     benchmark = _read_zse_index_csv(io.BytesIO(raw))
     assert list(benchmark.columns) == OHLCV_COLUMNS
     assert benchmark.iloc[0]["Close"] == 3390.97
+
+
+def test_default_comparison_samples_are_available():
+    instruments = load_comparison_samples()
+    assert set(instruments) == {"HT", "PODR", "KOEI"}
+    assert all(not frame.empty for frame in instruments.values())
+    assert all(list(frame.columns) == OHLCV_COLUMNS for frame in instruments.values())

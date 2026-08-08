@@ -12,16 +12,32 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from config.settings import COLORS, ETF_ISIN, ETF_NAME, ETF_TICKER
-from core.indicators import add_ema, add_macd, add_rsi, add_sma
+from core.indicators import (
+    add_atr,
+    add_bollinger_bands,
+    add_ema,
+    add_macd,
+    add_obv,
+    add_rsi,
+    add_sma,
+    add_stochastic,
+)
 from core.market_intelligence import (
     benchmark_stats,
     build_benchmark_comparison,
+    build_multi_comparison,
     freshness_status,
     liquidity_stats,
+    multi_comparison_stats,
 )
 from core.stats import compute_stats
-from data.loaders import get_data, load_benchmark_sample, load_zse_market_sample
-from ui.charts import build_chart_config, build_comparison_chart_config, hover_legend_data
+from data.loaders import (
+    get_data,
+    load_benchmark_sample,
+    load_comparison_samples,
+    load_zse_market_sample,
+)
+from ui.charts import build_chart_config, build_multi_comparison_chart_config, hover_legend_data
 from ui.metrics import render_chart_legend, render_market_intelligence, render_metrics
 from ui.sidebar import render_sidebar
 
@@ -43,7 +59,7 @@ def _load(_uploaded, try_yf: bool):
 
 @st.cache_data(show_spinner=False, ttl=3600)
 def _load_market_intelligence():
-    return load_zse_market_sample(), load_benchmark_sample()
+    return load_zse_market_sample(), load_benchmark_sample(), load_comparison_samples()
 
 
 def _filter_period(df: pd.DataFrame, period: str) -> pd.DataFrame:
@@ -130,9 +146,13 @@ def main() -> None:
 
     df, source = _load(opts["uploaded"], opts["try_yfinance"])
     df = _filter_period(df, opts["period"])
-    market_data, benchmark_data = _load_market_intelligence()
+    market_data, benchmark_data, comparison_samples = _load_market_intelligence()
     market_data = _filter_period(market_data, opts["period"])
     benchmark_data = _filter_period(benchmark_data, opts["period"])
+    comparison_samples = {
+        symbol: _filter_period(frame, opts["period"])
+        for symbol, frame in comparison_samples.items()
+    }
 
     indicators = {}
     if opts["show_sma"]:
@@ -147,12 +167,37 @@ def main() -> None:
     if opts["show_macd"]:
         df = add_macd(df)
         indicators["MACD"] = True
+    if opts["show_bollinger"]:
+        df = add_bollinger_bands(df, opts["bollinger_period"])
+        for band in ["middle", "upper", "lower"]:
+            indicators[f"BB_{band}_{opts['bollinger_period']}"] = True
+    if opts["show_atr"]:
+        df = add_atr(df, opts["atr_period"])
+        indicators["ATR"] = True
+    if opts["show_stochastic"]:
+        df = add_stochastic(df, opts["stochastic_period"])
+        indicators["Stochastic"] = True
+    if opts["show_obv"]:
+        df = add_obv(df)
+        indicators["OBV"] = True
 
     stats = compute_stats(df)
     comparison = build_benchmark_comparison(df, benchmark_data)
     relative_stats = benchmark_stats(comparison)
     liquidity = liquidity_stats(market_data, df)
     freshness = freshness_status(stats.get("last_date"))
+    instrument_frames = {
+        "7CRO": df,
+        "C10TR": benchmark_data,
+        **comparison_samples,
+    }
+    selected_frames = {
+        symbol: instrument_frames[symbol]
+        for symbol in opts["comparison_symbols"]
+        if symbol in instrument_frames
+    }
+    multi_comparison = build_multi_comparison(selected_frames)
+    multi_stats = multi_comparison_stats(multi_comparison)
 
     if df.empty:
         st.error("Nema podataka za prikaz.")
@@ -196,12 +241,22 @@ def main() -> None:
     if fs:
         _request_browser_fullscreen()
     else:
-        if opts["show_benchmark"] and not comparison.empty:
-            st.subheader("7CRO vs CROBEX10tr")
-            st.caption("Ukupni prinos od pocetka odabranog razdoblja · obje serije normalizirane na 100")
+        if opts["show_comparison"] and len(multi_comparison.columns) > 1:
+            st.subheader("Multi-instrument ZSE usporedba")
+            st.caption("Ukupni prinos od pocetka zajednickog razdoblja · sve serije normalizirane na 100")
             renderLightweightCharts(
-                build_comparison_chart_config(comparison),
-                key=f"benchmark_chart_{opts['period']}",
+                build_multi_comparison_chart_config(multi_comparison),
+                key=f"multi_chart_{opts['period']}_{'_'.join(opts['comparison_symbols'])}",
+            )
+            st.dataframe(
+                multi_stats,
+                hide_index=True,
+                use_container_width=True,
+                column_config={
+                    "Prinos": st.column_config.NumberColumn(format="%.2f%%"),
+                    "Volatilnost": st.column_config.NumberColumn(format="%.2f%%"),
+                    "Max drawdown": st.column_config.NumberColumn(format="%.2f%%"),
+                },
             )
         render_market_intelligence(relative_stats, liquidity)
         st.caption(

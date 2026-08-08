@@ -19,6 +19,7 @@ import pandas as pd
 
 from config.settings import (
     BENCHMARK_CSV,
+    COMPARISON_INSTRUMENTS,
     HRK_TO_EUR,
     OHLCV_COLUMNS,
     SAMPLE_CSV,
@@ -196,6 +197,14 @@ def load_zse_market_sample() -> pd.DataFrame:
 def load_benchmark_sample() -> pd.DataFrame:
     """Ucitaj spremljenu povijest sluzbenog CROBEX10tr benchmarka."""
     return _read_zse_index_csv(BENCHMARK_CSV)
+
+
+def load_comparison_samples() -> dict[str, pd.DataFrame]:
+    """Ucitaj zadanu kosaricu likvidnih ZSE dionica."""
+    return {
+        symbol: _read_zse_csv(metadata["path"])
+        for symbol, metadata in COMPARISON_INSTRUMENTS.items()
+    }
 
 
 def load_uploaded_csv(uploaded_file) -> pd.DataFrame:

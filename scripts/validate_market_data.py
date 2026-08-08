@@ -9,9 +9,9 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from config.settings import BENCHMARK_CSV, SAMPLE_CSV  # noqa: E402
+from config.settings import BENCHMARK_CSV, COMPARISON_INSTRUMENTS, SAMPLE_CSV  # noqa: E402
 from core.market_intelligence import freshness_status  # noqa: E402
-from data.loaders import load_benchmark_sample, load_zse_sample  # noqa: E402
+from data.loaders import load_benchmark_sample, load_comparison_samples, load_zse_sample  # noqa: E402
 
 
 def validate_frame(name: str, frame: pd.DataFrame, *, minimum_rows: int = 100) -> list[str]:
@@ -41,6 +41,9 @@ def main() -> int:
         benchmark = load_benchmark_sample()
         errors.extend(validate_frame("7CRO", asset))
         errors.extend(validate_frame("CROBEX10tr", benchmark))
+        comparison = load_comparison_samples()
+        for symbol, frame in comparison.items():
+            errors.extend(validate_frame(symbol, frame))
         if abs((asset["Date"].max() - benchmark["Date"].max()).days) > 5:
             errors.append("7CRO i CROBEX10tr zadnji datumi razlikuju se vise od 5 dana")
     except Exception as exc:  # noqa: BLE001
@@ -51,8 +54,8 @@ def main() -> int:
             print(f"[validate_market_data] GRESKA: {error}", file=sys.stderr)
         return 1
     print(
-        f"[validate_market_data] OK: {SAMPLE_CSV.name} i {BENCHMARK_CSV.name} "
-        "su potpuni i svjezi."
+        f"[validate_market_data] OK: {SAMPLE_CSV.name}, {BENCHMARK_CSV.name} i "
+        f"{len(COMPARISON_INSTRUMENTS)} usporedna instrumenta su potpuni i svjezi."
     )
     return 0
 

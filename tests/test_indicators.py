@@ -3,8 +3,18 @@ Testovi za tehničke indikatore.
 """
 
 import pandas as pd
+import pytest
 
-from core.indicators import add_ema, add_macd, add_rsi, add_sma
+from core.indicators import (
+    add_atr,
+    add_bollinger_bands,
+    add_ema,
+    add_macd,
+    add_obv,
+    add_rsi,
+    add_sma,
+    add_stochastic,
+)
 
 
 def test_sma_adds_column(ohlcv_df):
@@ -67,3 +77,30 @@ def test_indicators_do_not_mutate_input(ohlcv_df):
     add_sma(ohlcv_df, 5)
     add_rsi(ohlcv_df)
     assert list(ohlcv_df.columns) == cols_before
+
+
+def test_bollinger_bands_have_expected_columns_and_order(ohlcv_df):
+    out = add_bollinger_bands(ohlcv_df, period=20)
+    assert {"BB_middle_20", "BB_upper_20", "BB_lower_20"} <= set(out.columns)
+    last = out.iloc[-1]
+    assert last["BB_upper_20"] > last["BB_middle_20"] > last["BB_lower_20"]
+
+
+def test_atr_matches_constant_fixture_range(ohlcv_df):
+    out = add_atr(ohlcv_df, period=14)
+    assert out["ATR_14"].iloc[-1] == pytest.approx(2.0)
+    assert out["ATR_14"].iloc[:13].isna().all()
+
+
+def test_stochastic_is_bounded_and_has_signal(ohlcv_df):
+    out = add_stochastic(ohlcv_df, period=14, smooth=3)
+    k = out["STOCH_K_14"].dropna()
+    assert (k >= 0).all() and (k <= 100).all()
+    assert out["STOCH_D_14_3"].notna().any()
+
+
+def test_obv_accumulates_volume_on_uptrend(ohlcv_df):
+    out = add_obv(ohlcv_df)
+    assert out["OBV"].iloc[0] == 0
+    assert out["OBV"].is_monotonic_increasing
+    assert out["OBV"].iloc[-1] == ohlcv_df["Volume"].iloc[1:].sum()

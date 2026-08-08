@@ -85,3 +85,58 @@ def freshness_status(last_date, *, as_of: date | None = None, stale_after: int =
     else:
         days = len(pd.bdate_range(latest + pd.Timedelta(days=1), current))
     return {"business_days_stale": days, "is_stale": days > stale_after}
+
+
+def build_multi_comparison(instruments: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """Normaliziraj vise ZSE instrumenata na 100 od prvog zajednickog razdoblja."""
+    available = {
+        symbol: frame[["Date", "Close"]].dropna().sort_values("Date")
+        for symbol, frame in instruments.items()
+        if frame is not None and not frame.empty
+    }
+    if not available:
+        return pd.DataFrame(columns=["Date"])
+
+    common_start = max(frame["Date"].min() for frame in available.values())
+    dates = sorted(
+        {
+            value
+            for frame in available.values()
+            for value in frame.loc[frame["Date"] >= common_start, "Date"]
+        }
+    )
+    comparison = pd.DataFrame({"Date": dates})
+    for symbol, frame in available.items():
+        series = frame[frame["Date"] >= common_start].rename(columns={"Close": symbol})
+        comparison = comparison.merge(series[["Date", symbol]], on="Date", how="left")
+        valid = comparison[symbol].dropna()
+        if valid.empty or valid.iloc[0] == 0:
+            comparison = comparison.drop(columns=symbol)
+            continue
+        comparison[symbol] = comparison[symbol] / valid.iloc[0] * 100
+    return comparison
+
+
+def multi_comparison_stats(comparison: pd.DataFrame) -> pd.DataFrame:
+    """Prinos, godisnja volatilnost i maksimalni pad za svaku normaliziranu seriju."""
+    rows = []
+    for symbol in comparison.columns:
+        if symbol == "Date":
+            continue
+        series = comparison[symbol].dropna()
+        if series.empty:
+            continue
+        returns = series.pct_change().dropna()
+        drawdown = series / series.cummax() - 1
+        rows.append(
+            {
+                "Instrument": symbol,
+                "Prinos": float(series.iloc[-1] - 100),
+                "Volatilnost": float(returns.std(ddof=0) * (252 ** 0.5) * 100)
+                if not returns.empty
+                else 0.0,
+                "Max drawdown": float(drawdown.min() * 100),
+                "Sesije": int(series.count()),
+            }
+        )
+    return pd.DataFrame(rows)

@@ -20,6 +20,26 @@ BENCHMARK_NAME = "CROBEX10tr"
 BENCHMARK_TICKER = "C10TR"
 BENCHMARK_ISIN = "HRZB00ICB103"
 
+# Likvidne hrvatske dionice za zadanu multi-instrument usporedbu.
+COMPARISON_INSTRUMENTS = {
+    "HT": {
+        "name": "Hrvatski Telekom",
+        "isin": "HRHT00RA0005",
+        "path": BASE_DIR / "data" / "sample" / "ht_zse.csv",
+    },
+    "PODR": {
+        "name": "Podravka",
+        "isin": "HRPODRRA0004",
+        "path": BASE_DIR / "data" / "sample" / "podr_zse.csv",
+    },
+    "KOEI": {
+        "name": "KONČAR",
+        "isin": "HRKOEIRA0009",
+        "path": BASE_DIR / "data" / "sample" / "koei_zse.csv",
+    },
+}
+COMPARISON_SYMBOLS = [ETF_TICKER, BENCHMARK_TICKER, *COMPARISON_INSTRUMENTS]
+
 # --- ZSE REST API ---
 # Javni endpoint: <BASE>/security-history/<MIC>/<ISIN>/<od>/<do>/<fmt>?language=EN
 ZSE_API_BASE = "https://rest.zse.hr/web/Bvt9fe2peQ7pwpyYqODM"
@@ -48,6 +68,11 @@ COLORS = {
     "sma": "#2962ff",
     "ema": "#ff6d00",
     "benchmark": "#b388ff",
+    "bollinger": "#26c6da",
+    "atr": "#ffd54f",
+    "stochastic_k": "#7e57c2",
+    "stochastic_d": "#26a69a",
+    "obv": "#ec407a",
     "crosshair": "#758696",
     "border": "#363a45",
 }

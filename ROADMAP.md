@@ -2,10 +2,11 @@
 
 ## Trenutno stanje (v3, Streamlit MVP) ✅
 Funkcionalan, deployan dashboard:
-- Candlestick + volume + SMA/EMA/RSI/MACD
+- Candlestick + volume + SMA/EMA/RSI/MACD/Bollinger/ATR/Stochastic/OBV
 - HRK→EUR konverzija, hover legenda, fullscreen
 - Auto-pull sa ZSE REST API (GitHub Actions cron, radnim danom 18h)
 - 7CRO vs CROBEX10tr benchmark, tracking razlika i ZSE likvidnosne metrike
+- Multi-instrument usporedba s HT, PODR i KOEI, uključujući volatilnost i drawdown
 - Provjera svježine podataka u aplikaciji i CI pipelineu
 - 37 testova (TDD), modularna arhitektura (data / core / ui razdvojeni)
 
@@ -56,7 +57,7 @@ GET /api/health                           → status + zadnji datum podataka
   ravnalo (measure) — sve mišem preko lightweight-charts plugina
 - Crteži spremljeni u localStorage (preživljavaju refresh)
 - Pravi fullscreen, custom hover tooltip uz kursor
-- Usporedba više instrumenata — proširenje postojećeg 7CRO vs CROBEX10tr prikaza
+- Prilagodljivi watchlist iz šireg kataloga ZSE instrumenata
 
 ### Redoslijed izvedbe v4
 1. FastAPI skeleton + prebaci core/ i data/ → izloži /api/ohlcv (TDD)
