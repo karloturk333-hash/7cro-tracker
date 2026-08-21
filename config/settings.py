@@ -42,6 +42,8 @@ COMPARISON_SYMBOLS = [ETF_TICKER, BENCHMARK_TICKER, *COMPARISON_INSTRUMENTS]
 
 # --- ZSE REST API ---
 # Javni endpoint: <BASE>/security-history/<MIC>/<ISIN>/<od>/<do>/<fmt>?language=EN
+# Nema API ključa. Pun katalog InterCapital ETF-ova + regionalni mix:
+# config/zse_instruments.json  i  docs/AGENT_ZSE_API.md
 ZSE_API_BASE = "https://rest.zse.hr/web/Bvt9fe2peQ7pwpyYqODM"
 ZSE_MIC = "XZAG"
 
