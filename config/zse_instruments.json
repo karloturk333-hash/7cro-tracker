@@ -1,0 +1,184 @@
+{
+  "meta": {
+    "title": "ZSE / InterCapital ETF instrument catalog",
+    "verified": "2026-08-21",
+    "auth": "none",
+    "note": "Public ZSE/LJSE website REST. No API key, no OAuth, no personal token. The path segment Bvt9fe2peQ7pwpyYqODM is a public website token, not a secret."
+  },
+  "api": {
+    "zse_base": "https://rest.zse.hr/web/Bvt9fe2peQ7pwpyYqODM",
+    "ljse_base": "https://rest.ljse.si/web/Bvt9fe2peQ7pwpyYqODM",
+    "zse_mic": "XZAG",
+    "ljse_mic": "XLJU",
+    "security_history": "{base}/security-history/{mic}/{isin}/{date_from}/{date_to}/{fmt}?language=EN",
+    "index_history": "{base}/index-history/{mic}/{isin}/{date_from}/{date_to}/{fmt}?language=EN",
+    "fmt": ["json", "csv"],
+    "date_format": "YYYY-MM-DD",
+    "market_close_hour_cet": 18,
+    "hrk_to_eur": 7.5345,
+    "eur_changeover": "2023-01-01"
+  },
+  "intercapital_etfs": [
+    {
+      "symbol": "7CRO",
+      "isin": "HRICAMFCR102",
+      "name": "InterCapital CROBEX10tr UCITS ETF",
+      "asset_class": "equity",
+      "region": "HR",
+      "region_name": "Hrvatska / Croatia",
+      "benchmark": "CROBEX10tr",
+      "benchmark_symbol": "C10TR",
+      "benchmark_isin": "HRZB00ICB103",
+      "benchmark_venue": "XZAG",
+      "first_trading_day": "2020-11-17",
+      "currency_now": "EUR",
+      "had_hrk_history": true,
+      "zse_page": "https://zse.hr/en/papir-311/310?isin=HRICAMFCR102",
+      "cross_listings": [
+        {"venue": "XZAG", "symbol": "7CRO", "isin": "HRICAMFCR102"},
+        {"venue": "XLJU", "symbol": "ICCRO"},
+        {"venue": "XBSE", "symbol": "ICCROETF"}
+      ]
+    },
+    {
+      "symbol": "7SLO",
+      "isin": "HRICAMFSBI06",
+      "name": "InterCapital SBITOP TR UCITS ETF",
+      "asset_class": "equity",
+      "region": "SI",
+      "region_name": "Slovenija / Slovenia",
+      "benchmark": "SBITOP TR",
+      "benchmark_symbol": "SBITR",
+      "benchmark_isin": "SI0028409892",
+      "benchmark_venue": "XLJU",
+      "first_trading_day": "2020-11-17",
+      "currency_now": "EUR",
+      "had_hrk_history": true,
+      "zse_page": "https://zse.hr/en/papir-311/310?isin=HRICAMFSBI06",
+      "cross_listings": [
+        {"venue": "XZAG", "symbol": "7SLO", "isin": "HRICAMFSBI06"},
+        {"venue": "XLJU", "symbol": "ICSLO"},
+        {"venue": "XBSE", "symbol": "ICSLOETF"}
+      ]
+    },
+    {
+      "symbol": "7BET",
+      "isin": "HRICAMFBETR5",
+      "name": "InterCapital BET-TRN UCITS ETF",
+      "asset_class": "equity",
+      "region": "RO",
+      "region_name": "Rumunjska / Romania",
+      "benchmark": "BET-TRN",
+      "benchmark_symbol": "BET-TRN",
+      "benchmark_isin": "ROC05FKJWRL5",
+      "benchmark_venue": "XBSE",
+      "first_trading_day": "2023-05-31",
+      "currency_now": "EUR",
+      "had_hrk_history": false,
+      "zse_page": "https://zse.hr/en/papir-311/310?isin=HRICAMFBETR5",
+      "cross_listings": [
+        {"venue": "XZAG", "symbol": "7BET", "isin": "HRICAMFBETR5"},
+        {"venue": "XLJU", "symbol": "ICBET", "isin": "HRICAMFBETR5"},
+        {"venue": "XBSE", "symbol": "ICBETNETF"}
+      ]
+    },
+    {
+      "symbol": "7POL",
+      "isin": "HRICAMFPWIG3",
+      "name": "InterCapital Poland WIG30TR UCITS ETF",
+      "asset_class": "equity",
+      "region": "PL",
+      "region_name": "Poljska / Poland",
+      "benchmark": "WIG30TR",
+      "benchmark_symbol": "WIG30TR",
+      "benchmark_isin": "PL9999999367",
+      "benchmark_venue": "XWAR",
+      "first_trading_day": "2026-05-19",
+      "currency_now": "EUR",
+      "had_hrk_history": false,
+      "newest_listing": true,
+      "zse_page": "https://zse.hr/en/papir-311/310?isin=HRICAMFPWIG3",
+      "cross_listings": [
+        {"venue": "XZAG", "symbol": "7POL", "isin": "HRICAMFPWIG3"},
+        {"venue": "XLJU", "symbol": "ICPOL", "isin": "HRICAMFPWIG3"}
+      ]
+    },
+    {
+      "symbol": "7CASH",
+      "isin": "HRICAMFEUMM1",
+      "name": "InterCapital Euro Money Market UCITS ETF",
+      "asset_class": "money_market",
+      "region": "EU",
+      "region_name": "Europska unija / European Union",
+      "benchmark": null,
+      "benchmark_symbol": null,
+      "benchmark_isin": null,
+      "benchmark_venue": null,
+      "first_trading_day": "2023-10-30",
+      "currency_now": "EUR",
+      "had_hrk_history": false,
+      "sparse_trading": true,
+      "zse_page": "https://zse.hr/en/papir-311/310?isin=HRICAMFEUMM1",
+      "cross_listings": [
+        {"venue": "XZAG", "symbol": "7CASH", "isin": "HRICAMFEUMM1"},
+        {"venue": "XLJU", "symbol": "ICASH"}
+      ]
+    },
+    {
+      "symbol": "7GROM",
+      "isin": "HRICAMFERGB2",
+      "name": "InterCapital EUR Romania Govt Bond 5-10yr UCITS ETF",
+      "asset_class": "bond",
+      "region": "RO",
+      "region_name": "Rumunjska / Romania",
+      "benchmark": null,
+      "benchmark_symbol": null,
+      "benchmark_isin": null,
+      "benchmark_venue": null,
+      "first_trading_day": "2024-06-05",
+      "currency_now": "EUR",
+      "had_hrk_history": false,
+      "sparse_trading": true,
+      "zse_page": "https://zse.hr/en/instrument/310?isin=HRICAMFERGB2",
+      "cross_listings": [
+        {"venue": "XZAG", "symbol": "7GROM", "isin": "HRICAMFERGB2"},
+        {"venue": "XLJU", "symbol": "ICGRO", "isin": "HRICAMFERGB2"},
+        {"venue": "XBSE", "symbol": "ICGROETF", "isin": "HRICAMFRGBB8"}
+      ]
+    }
+  ],
+  "zse_indices": [
+    {"symbol": "CBX", "isin": "HRZB00ICBEX6", "name": "CROBEX"},
+    {"symbol": "CBX10", "isin": "HRZB00ICBE11", "name": "CROBEX10"},
+    {"symbol": "C10TR", "isin": "HRZB00ICB103", "name": "CROBEX10tr"},
+    {"symbol": "CBXTR", "isin": "HRZB00ICBTR6", "name": "CROBEXtr"}
+  ],
+  "comparison_shares": [
+    {"symbol": "HT", "isin": "HRHT00RA0005", "name": "Hrvatski Telekom"},
+    {"symbol": "PODR", "isin": "HRPODRRA0004", "name": "Podravka"},
+    {"symbol": "KOEI", "isin": "HRKOEIRA0009", "name": "KONČAR"}
+  ],
+  "regional_mix": {
+    "name": "ETF - 100% DIONICE",
+    "provider": "InterCapital",
+    "risk_level_shown": 9,
+    "risk_scale": 10,
+    "available_from_risk_level": 6,
+    "note": "Alokacija ovisi o razini rizika. Ovo je prikaz za rizik 9/10.",
+    "weights": [
+      {"symbol": "7POL", "weight": 0.34},
+      {"symbol": "7BET", "weight": 0.26},
+      {"symbol": "7CRO", "weight": 0.20},
+      {"symbol": "7SLO", "weight": 0.20}
+    ]
+  },
+  "new_ticker_template": {
+    "symbol": "TODO",
+    "isin": "TODO",
+    "name": "TODO",
+    "asset_class": "equity",
+    "region": "TODO",
+    "first_trading_day": "YYYY-MM-DD",
+    "how_to_resolve": "Open https://zse.hr and search the ticker. Copy ISIN from the instrument page. History URL is the same security-history pattern with that ISIN. No new API key."
+  }
+}
