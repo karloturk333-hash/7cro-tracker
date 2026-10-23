@@ -72,6 +72,11 @@ Aplikacija koristi službeni ZSE export povijesti (`SecurityHistory`).
 Za osvježavanje: preuzmi novi CSV sa [ZSE stranice 7CRO](https://zse.hr/en/papir-311/310?isin=HRICAMFCR102)
 i uploadaj ga kroz sidebar — loader automatski prepoznaje ZSE format.
 
+**Javni REST, bez API ključa.** Agent-ready specifikacija (7CRO, regionalni mix
+7POL/7BET/7CRO/7SLO, 7CASH, 7GROM, CROBEX indeksi) je u
+[`docs/AGENT_ZSE_API.md`](docs/AGENT_ZSE_API.md). Katalog ISIN-a:
+[`config/zse_instruments.json`](config/zse_instruments.json).
+
 ## Roadmap (v2)
 
 - RSI i MACD u zasebnim panelima (logika već implementirana u `core/indicators.py`)
